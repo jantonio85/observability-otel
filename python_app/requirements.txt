@@ -7,4 +7,5 @@ opentelemetry-exporter-otlp
 opentelemetry-instrumentation-fastapi
 opentelemetry-distro
 opentelemetry-instrumentation-system-metrics
+opentelemetry-instrumentation-logging
 psutil

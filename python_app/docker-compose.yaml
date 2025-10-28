@@ -13,6 +13,7 @@ services:
         condition: service_healthy
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - OTEL_METRIC_EXPORT_INTERVAL=15000  # 15 segundos en desarrollo
     networks:
       - isa-network
 
@@ -20,29 +21,29 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel-collector
     hostname: otel-collector
-    command: 
+    command:
       - "--config=/etc/otel-collector-config.yml"
       - "--set=service.telemetry.logs.level=debug"
     volumes:
-      - ./otel-collector-config-bk.yml:/etc/otel-collector-config.yml
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "13133:13133" # Health check
-      - "8888:8888"   # Metrics endpoint
-      - "8889:8889"   # Prometheus exporter
-      - "55679:55679" # zpages
-    networks:
-      - isa-network
+      - "4317:4317"
+      - "4318:4318"
+      - "13133:13133"
+      - "8889:8889"
+      - "55679:55679"
     healthcheck:
-      test: ["CMD", "otel-collector", "--config=/etc/otel-collector-config.yml", "validate"]
+      test: ["CMD", "curl", "-f", "http://localhost:13133"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - isa-network
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    hostname: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -50,8 +51,10 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
     networks:
       - isa-network
+
 networks:
   isa-network:
     name: isa-network

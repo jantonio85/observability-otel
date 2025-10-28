@@ -11,7 +11,10 @@ processors:
 
 exporters:
   prometheus:
-    endpoint: "0.0.0.0:8889" 
+    endpoint: "0.0.0.0:8889"
+    namespace: "fastapi"
+    const_labels:
+      service: "fastapi-server"
   debug:
     verbosity: detailed
 extensions:
@@ -33,7 +36,7 @@ service:
         - pull:
             exporter:
               prometheus:
-                host: 'localhost'
+                host: '0.0.0.0'
                 port: 8888
   pipelines:
     metrics:

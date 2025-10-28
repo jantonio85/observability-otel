@@ -5,46 +5,45 @@ receivers:
         endpoint: "0.0.0.0:4317"
       http:
         endpoint: "0.0.0.0:4318"
-  # Receptor para logs de Promtail
-  loki:
-    endpoint: "0.0.0.0:3100"
 
 processors:
   batch:
-  # Procesador para logs
-  resourcedetection:
-    detectors: [env, system]
 
 exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "fastapi"
+    const_labels:
+      service: "fastapi-server"
   debug:
     verbosity: detailed
-  prometheus:
-    endpoint: "0.0.0.0:8888" # <--- Puerto para métricas de Prometheus
-  jaeger:
-    endpoint: "jaeger:14250"
-    insecure: true
-  loki:
-    endpoint: "loki:3100/loki/api/v1/push"
-
 extensions:
+  # Health check endpoint
   health_check:
-    endpoint: "0.0.0.0:13133"
-
+    endpoint: 0.0.0.0:13133
+    path: "/health"
+    # pprof for profiling
+  # pprof:
+  #   endpoint: localhost:1777
 service:
+  extensions: [health_check]
   telemetry:
     logs:
       level: debug
-  extensions: [health_check]
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '0.0.0.0'
+                port: 8888
   pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, jaeger]
     metrics:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, prometheus]
-    logs:
+    traces:
       receivers: [otlp]
-      processors: [batch, resourcedetection]
-      exporters: [debug, loki]
+      processors: [batch]
+      exporters: [debug]
