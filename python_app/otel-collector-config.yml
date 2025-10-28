@@ -1,0 +1,50 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+  # Receptor para logs de Promtail
+  loki:
+    endpoint: "0.0.0.0:3100"
+
+processors:
+  batch:
+  # Procesador para logs
+  resourcedetection:
+    detectors: [env, system]
+
+exporters:
+  debug:
+    verbosity: detailed
+  prometheus:
+    endpoint: "0.0.0.0:8888" # <--- Puerto para métricas de Prometheus
+  jaeger:
+    endpoint: "jaeger:14250"
+    insecure: true
+  loki:
+    endpoint: "loki:3100/loki/api/v1/push"
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch, resourcedetection]
+      exporters: [debug, loki]

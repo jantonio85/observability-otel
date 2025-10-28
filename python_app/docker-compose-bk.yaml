@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  fastapi-server:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/code/app
+    depends_on:
+      otel-collector:
+        condition: service_healthy
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+    networks:
+      - isa-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    hostname: otel-collector
+    command: 
+      - "--config=/etc/otel-collector-config.yml"
+      - "--set=service.telemetry.logs.level=debug"
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "13133:13133" # Health check
+      - "8888:8888"   # Metrics endpoint
+      - "8889:8889"   # Prometheus exporter
+      - "55679:55679" # zpages
+    networks:
+      - isa-network
+    healthcheck:
+      test: ["CMD", "otel-collector", "--config=/etc/otel-collector-config.yml", "validate"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  isa-network:
+    name: isa-network
+    driver: bridge

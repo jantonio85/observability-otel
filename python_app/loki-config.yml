@@ -1,0 +1,47 @@
+auth_enabled: false
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  max_chunk_age: 5m
+  chunk_target_size: 1048576 # 1 MB
+  chunk_retain_period: 1m
+schema_config:
+  configs:
+  - from: 2020-10-24
+    store: boltdb
+    object_store: filesystem
+    schema: v11
+    index:
+      prefix: index_
+      period: 168h
+storage_config:
+  boltdb:
+    directory: /data/loki/index
+  filesystem:
+    directory: /data/loki/chunks
+compactor:
+  working_directory: /data/loki/compactor
+  shared_store: filesystem
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /data/loki/rules
+  rule_path: /data/loki/rules
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
